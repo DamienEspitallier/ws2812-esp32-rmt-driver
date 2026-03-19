@@ -5,14 +5,13 @@ use crate::driver::{Ws2812Esp32RmtDriver, Ws2812Esp32RmtDriverError};
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::vec::Vec;
 use core::marker::PhantomData;
-use esp_idf_hal::rmt::TxRmtDriver;
 #[cfg(feature = "alloc")]
 use smart_leds_trait::SmartLedsWrite;
 use smart_leds_trait::{RGB8, RGBW};
 
 #[cfg(not(target_vendor = "espressif"))]
 use crate::mock::esp_idf_hal;
-use esp_idf_hal::{gpio::OutputPin, peripheral::Peripheral, rmt::RmtChannel};
+use esp_idf_hal::{gpio::OutputPin, rmt::TxChannelDriver};
 
 /// 8-bit RGBW (RGB + white)
 pub type RGBW8 = RGBW<u8, u8>;
@@ -61,8 +60,7 @@ impl<
 ///
 /// let peripherals = Peripherals::take().unwrap();
 /// let led_pin = peripherals.pins.gpio26;
-/// let channel = peripherals.rmt.channel0;
-/// let mut ws2812 = LedPixelEsp32Rmt::<RGBW8, LedPixelColorGrbw32>::new(channel, led_pin).unwrap();
+/// let mut ws2812 = LedPixelEsp32Rmt::<RGBW8, LedPixelColorGrbw32>::new(led_pin).unwrap();
 ///
 /// let pixels = std::iter::repeat(RGBW8 {r: 0, g: 0, b: 0, a: White(30)}).take(25);
 /// ws2812.write(pixels).unwrap();
@@ -80,36 +78,26 @@ where
     CDev: LedPixelColor + From<CSmart>,
 {
     /// Create a new driver wrapper.
-    ///
-    /// `channel` shall be different between different `pin`.
-    pub fn new<C: RmtChannel>(
-        channel: impl Peripheral<P = C> + 'd,
-        pin: impl Peripheral<P = impl OutputPin> + 'd,
-    ) -> Result<Self, Ws2812Esp32RmtDriverError> {
-        Self::new_with_ws2812_driver(Ws2812Esp32RmtDriver::<'d>::new(channel, pin)?)
+    pub fn new(pin: impl OutputPin + 'd) -> Result<Self, Ws2812Esp32RmtDriverError> {
+        Self::new_with_ws2812_driver(Ws2812Esp32RmtDriver::<'d>::new(pin)?)
     }
 
-    /// Create a new driver wrapper with `TxRmtDriver`.
-    ///
-    /// The clock divider must be set to 1 for the `driver` configuration.
+    /// Create a new driver wrapper with `TxChannelDriver`.
     ///
     /// ```
     /// # #[cfg(not(target_vendor = "espressif"))]
     /// # use ws2812_esp32_rmt_driver::mock::esp_idf_hal;
     /// #
     /// # use esp_idf_hal::peripherals::Peripherals;
-    /// # use esp_idf_hal::rmt::config::TransmitConfig;
-    /// # use esp_idf_hal::rmt::TxRmtDriver;
+    /// # use esp_idf_hal::rmt::config::TxChannelConfig;
+    /// # use esp_idf_hal::rmt::TxChannelDriver;
     /// #
     /// # let peripherals = Peripherals::take().unwrap();
     /// # let led_pin = peripherals.pins.gpio27;
-    /// # let channel = peripherals.rmt.channel0;
     /// #
-    /// let driver_config = TransmitConfig::new()
-    ///     .clock_divider(1); // Required parameter.
-    /// let driver = TxRmtDriver::new(channel, led_pin, &driver_config).unwrap();
+    /// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
     /// ```
-    pub fn new_with_rmt_driver(tx: TxRmtDriver<'d>) -> Result<Self, Ws2812Esp32RmtDriverError> {
+    pub fn new_with_rmt_driver(tx: TxChannelDriver<'d>) -> Result<Self, Ws2812Esp32RmtDriverError> {
         Self::new_with_ws2812_driver(Ws2812Esp32RmtDriver::<'d>::new_with_rmt_driver(tx)?)
     }
 
@@ -199,8 +187,7 @@ where
 ///
 /// let peripherals = Peripherals::take().unwrap();
 /// let led_pin = peripherals.pins.gpio27;
-/// let channel = peripherals.rmt.channel0;
-/// let mut ws2812 = Ws2812Esp32Rmt::new(channel, led_pin).unwrap();
+/// let mut ws2812 = Ws2812Esp32Rmt::new(led_pin).unwrap();
 ///
 /// let pixels = std::iter::repeat(RGB8::new(30, 0, 0)).take(25);
 /// ws2812.write(pixels).unwrap();
@@ -220,19 +207,15 @@ where
 /// # use ws2812_esp32_rmt_driver::mock::esp_idf_hal;
 /// #
 /// # use esp_idf_hal::peripherals::Peripherals;
-/// # use esp_idf_hal::rmt::config::TransmitConfig;
-/// # use esp_idf_hal::rmt::TxRmtDriver;
+/// # use esp_idf_hal::rmt::config::TxChannelConfig;
+/// # use esp_idf_hal::rmt::TxChannelDriver;
 /// # use smart_leds::{RGB8, SmartLedsWrite};
 /// # use ws2812_esp32_rmt_driver::Ws2812Esp32Rmt;
 /// #
 /// # let peripherals = Peripherals::take().unwrap();
 /// # let led_pin = peripherals.pins.gpio27;
-/// # let channel = peripherals.rmt.channel0;
 /// #
-/// let driver_config = TransmitConfig::new()
-///     .clock_divider(1)  // Required parameter.
-///     .mem_block_num(2); // Increase the number depending on your code.
-/// let driver = TxRmtDriver::new(channel, led_pin, &driver_config).unwrap();
+/// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
 ///
 /// let mut ws2812 = Ws2812Esp32Rmt::new_with_rmt_driver(driver).unwrap();
 /// #
@@ -253,9 +236,8 @@ mod test {
 
         let peripherals = Peripherals::take().unwrap();
         let led_pin = peripherals.pins.gpio0;
-        let channel = peripherals.rmt.channel0;
 
-        let mut ws2812 = Ws2812Esp32Rmt::new(channel, led_pin).unwrap();
+        let mut ws2812 = Ws2812Esp32Rmt::new(led_pin).unwrap();
         ws2812.write(sample_data.iter().cloned()).unwrap();
         assert_eq!(ws2812.driver.pixel_data.unwrap(), &expected_values);
     }

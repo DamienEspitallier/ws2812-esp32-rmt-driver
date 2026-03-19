@@ -90,7 +90,6 @@ pub mod esp_idf_hal {
     pub mod rmt {
         use super::gpio::OutputPin;
         use super::sys::EspError;
-        use super::units::Hertz;
         use core::marker::PhantomData;
         use paste::paste;
 
@@ -177,7 +176,7 @@ pub mod esp_idf_hal {
         pub type ValueType = u32;
 
         /// Mock struct for `esp_idf_hal::units::Hertz`
-        #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Hash, Default)]
+        #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Hash, Default, Debug)]
         pub struct Hertz(pub ValueType);
     }
 }

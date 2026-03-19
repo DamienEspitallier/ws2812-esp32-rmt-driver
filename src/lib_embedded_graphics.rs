@@ -8,11 +8,9 @@ use embedded_graphics_core::draw_target::DrawTarget;
 use embedded_graphics_core::geometry::{OriginDimensions, Point, Size};
 use embedded_graphics_core::pixelcolor::{Rgb888, RgbColor};
 use embedded_graphics_core::Pixel;
-use esp_idf_hal::rmt::TxRmtDriver;
-
 #[cfg(not(target_vendor = "espressif"))]
 use crate::mock::esp_idf_hal;
-use esp_idf_hal::{gpio::OutputPin, peripheral::Peripheral, rmt::RmtChannel};
+use esp_idf_hal::{gpio::OutputPin, rmt::TxChannelDriver};
 
 /// LED pixel shape
 pub trait LedPixelShape {
@@ -108,37 +106,27 @@ where
     Data: DerefMut<Target = [u8]> + FromIterator<u8> + IntoIterator<Item = u8>,
 {
     /// Create a new draw target.
-    ///
-    /// `channel` shall be different between different `pin`.
-    pub fn new<C: RmtChannel>(
-        channel: impl Peripheral<P = C> + 'd,
-        pin: impl Peripheral<P = impl OutputPin> + 'd,
-    ) -> Result<Self, Ws2812Esp32RmtDriverError> {
-        let driver = Ws2812Esp32RmtDriver::<'d>::new(channel, pin)?;
+    pub fn new(pin: impl OutputPin + 'd) -> Result<Self, Ws2812Esp32RmtDriverError> {
+        let driver = Ws2812Esp32RmtDriver::<'d>::new(pin)?;
         Self::new_with_ws2812_driver(driver)
     }
 
-    /// Create a new draw target with `TxRmtDriver`.
-    ///
-    /// The clock divider must be set to 1 for the `driver` configuration.
+    /// Create a new draw target with `TxChannelDriver`.
     ///
     /// ```
     /// # #[cfg(not(target_vendor = "espressif"))]
     /// # use ws2812_esp32_rmt_driver::mock::esp_idf_hal;
     /// #
     /// # use esp_idf_hal::peripherals::Peripherals;
-    /// # use esp_idf_hal::rmt::config::TransmitConfig;
-    /// # use esp_idf_hal::rmt::TxRmtDriver;
+    /// # use esp_idf_hal::rmt::config::TxChannelConfig;
+    /// # use esp_idf_hal::rmt::TxChannelDriver;
     /// #
     /// # let peripherals = Peripherals::take().unwrap();
     /// # let led_pin = peripherals.pins.gpio27;
-    /// # let channel = peripherals.rmt.channel0;
     /// #
-    /// let driver_config = TransmitConfig::new()
-    ///     .clock_divider(1); // Required parameter.
-    /// let driver = TxRmtDriver::new(channel, led_pin, &driver_config).unwrap();
+    /// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
     /// ```
-    pub fn new_with_rmt_driver(tx: TxRmtDriver<'d>) -> Result<Self, Ws2812Esp32RmtDriverError> {
+    pub fn new_with_rmt_driver(tx: TxChannelDriver<'d>) -> Result<Self, Ws2812Esp32RmtDriverError> {
         let driver = Ws2812Esp32RmtDriver::<'d>::new_with_rmt_driver(tx)?;
         Self::new_with_ws2812_driver(driver)
     }
@@ -282,8 +270,7 @@ pub type LedPixelStrip<const L: usize> = LedPixelMatrix<L, 1>;
 ///
 /// let peripherals = Peripherals::take().unwrap();
 /// let led_pin = peripherals.pins.gpio27;
-/// let channel = peripherals.rmt.channel0;
-/// let mut draw = Ws2812DrawTarget::<LedPixelMatrix<5, 5>>::new(channel, led_pin).unwrap();
+/// let mut draw = Ws2812DrawTarget::<LedPixelMatrix<5, 5>>::new(led_pin).unwrap();
 /// draw.set_brightness(40);
 /// draw.clear_with_black().unwrap();
 /// let mut translated_draw = draw.translated(Point::new(0, 0));
@@ -348,9 +335,8 @@ mod test {
     fn test_ws2812draw_target_new() {
         let peripherals = Peripherals::take().unwrap();
         let led_pin = peripherals.pins.gpio0;
-        let channel = peripherals.rmt.channel0;
 
-        let draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>>::new(channel, led_pin).unwrap();
+        let draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>>::new(led_pin).unwrap();
         assert_eq!(draw.changed, true);
         assert_eq!(
             draw.data,
@@ -364,10 +350,9 @@ mod test {
 
         let peripherals = Peripherals::take().unwrap();
         let led_pin = peripherals.pins.gpio0;
-        let channel = peripherals.rmt.channel0;
 
         let draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>, heapless::Vec<u8, VEC_CAPACITY>>::new(
-            channel, led_pin,
+            led_pin,
         )
         .unwrap();
         assert_eq!(draw.changed, true);
@@ -383,9 +368,8 @@ mod test {
     fn test_ws2812draw_target_draw() {
         let peripherals = Peripherals::take().unwrap();
         let led_pin = peripherals.pins.gpio1;
-        let channel = peripherals.rmt.channel1;
 
-        let mut draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>>::new(channel, led_pin).unwrap();
+        let mut draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>>::new(led_pin).unwrap();
 
         draw.draw_iter(
             [
@@ -424,9 +408,8 @@ mod test {
     fn test_ws2812draw_target_flush() {
         let peripherals = Peripherals::take().unwrap();
         let led_pin = peripherals.pins.gpio2;
-        let channel = peripherals.rmt.channel2;
 
-        let mut draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>>::new(channel, led_pin).unwrap();
+        let mut draw = Ws2812DrawTarget::<LedPixelMatrix<10, 5>>::new(led_pin).unwrap();
 
         draw.changed = true;
         draw.data.fill(0x01);
