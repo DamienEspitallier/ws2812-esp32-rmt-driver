@@ -10,7 +10,7 @@ use core::marker::PhantomData;
 #[cfg(not(target_vendor = "espressif"))]
 use crate::mock::esp_idf_hal;
 #[cfg(target_vendor = "espressif")]
-use esp_idf_hal::rmt::{encoder::CopyEncoder, PinState, Pulse, Symbol};
+use esp_idf_hal::rmt::{encoder::{BytesEncoder, BytesEncoderConfig}, PinState, Pulse, Symbol};
 use esp_idf_hal::{
     gpio::OutputPin,
     rmt::{config::TxChannelConfig, TxChannelDriver},
@@ -327,19 +327,14 @@ impl<'d> Ws2812Esp32RmtDriver<'d> {
     {
         #[cfg(target_vendor = "espressif")]
         {
-            let bit0 = self.encoder.bit0;
-            let bit1 = self.encoder.bit1;
-            let iter = pixel_sequence.map(move |v| {
-                let mut symbols = [bit0; 8];
-                for i in 0..8 {
-                    if v & (1 << (7 - i)) != 0 {
-                        symbols[i] = bit1;
-                    }
-                }
-                symbols
-            });
-            let encoder = CopyEncoder::new()?;
-            self.tx.send_iter([encoder], iter, &TransmitConfig::default())?;
+            let encoder = BytesEncoder::with_config(&BytesEncoderConfig {
+                bit0: self.encoder.bit0,
+                bit1: self.encoder.bit1,
+                msb_first: true,
+                ..Default::default()
+            })?;
+            let data: alloc::vec::Vec<u8> = pixel_sequence.collect();
+            self.tx.send_iter([encoder], core::iter::once(data.as_slice()), &TransmitConfig::default())?;
         }
         #[cfg(not(target_vendor = "espressif"))]
         {
@@ -366,19 +361,14 @@ impl<'d> Ws2812Esp32RmtDriver<'d> {
     {
         #[cfg(target_vendor = "espressif")]
         {
-            let bit0 = self.encoder.bit0;
-            let bit1 = self.encoder.bit1;
-            let iter = pixel_sequence.map(move |v| {
-                let mut symbols = [bit0; 8];
-                for i in 0..8 {
-                    if v & (1 << (7 - i)) != 0 {
-                        symbols[i] = bit1;
-                    }
-                }
-                symbols
-            });
-            let encoder = CopyEncoder::new()?;
-            self.tx.send_iter([encoder], iter, &TransmitConfig::default())?;
+            let encoder = BytesEncoder::with_config(&BytesEncoderConfig {
+                bit0: self.encoder.bit0,
+                bit1: self.encoder.bit1,
+                msb_first: true,
+                ..Default::default()
+            })?;
+            let data: alloc::vec::Vec<u8> = pixel_sequence.collect();
+            self.tx.send_iter([encoder], core::iter::once(data.as_slice()), &TransmitConfig::default())?;
         }
         #[cfg(not(target_vendor = "espressif"))]
         {
