@@ -2,6 +2,7 @@
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::rmt::config::TxChannelConfig;
 use esp_idf_hal::rmt::TxChannelDriver;
+use esp_idf_hal::units::Hertz;
 use esp_idf_hal::sys::esp_random;
 use smart_leds::hsv::{hsv2rgb, Hsv};
 use smart_leds_trait::{SmartLedsWrite, RGB8};
@@ -25,7 +26,7 @@ fn main() -> ! {
     let peripherals = Peripherals::take().unwrap();
     let led_pin = peripherals.pins.gpio25;
 
-    let tx_driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
+    let tx_driver = TxChannelDriver::new(led_pin, &TxChannelConfig { resolution: Hertz(80_000_000), ..Default::default() }).unwrap();
     let ws2812_driver = Ws2812Esp32RmtDriverBuilder::new_with_rmt_driver(tx_driver)
         .unwrap()
         .encoder_duration(

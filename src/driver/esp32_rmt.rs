@@ -130,6 +130,7 @@ impl From<EspError> for Ws2812Esp32RmtDriverError {
 /// # use esp_idf_hal::peripherals::Peripherals;
 /// # use esp_idf_hal::rmt::config::{TransmitConfig, TxChannelConfig};
 /// # use esp_idf_hal::rmt::TxChannelDriver;
+/// # use esp_idf_hal::units::Hertz;
 /// # use ws2812_esp32_rmt_driver::driver::Ws2812Esp32RmtDriverBuilder;
 /// #
 /// # let peripherals = Peripherals::take().unwrap();
@@ -141,7 +142,7 @@ impl From<EspError> for Ws2812Esp32RmtDriverError {
 /// const WS2812_T1H_NS: Duration = Duration::from_nanos(800);
 /// const WS2812_T1L_NS: Duration = Duration::from_nanos(450);
 ///
-/// let channel_config = TxChannelConfig::default();
+/// let channel_config = TxChannelConfig { resolution: Hertz(80_000_000), ..Default::default() };
 /// let tx_driver = TxChannelDriver::new(led_pin, &channel_config).unwrap();
 /// let driver = Ws2812Esp32RmtDriverBuilder::new_with_rmt_driver(tx_driver).unwrap()
 ///    .encoder_duration(&WS2812_T0H_NS, &WS2812_T0L_NS, &WS2812_T1H_NS, &WS2812_T1L_NS).unwrap()
@@ -292,11 +293,12 @@ impl<'d> Ws2812Esp32RmtDriver<'d> {
     /// # use esp_idf_hal::peripherals::Peripherals;
     /// # use esp_idf_hal::rmt::config::TxChannelConfig;
     /// # use esp_idf_hal::rmt::TxChannelDriver;
+    /// # use esp_idf_hal::units::Hertz;
     /// #
     /// # let peripherals = Peripherals::take().unwrap();
     /// # let led_pin = peripherals.pins.gpio27;
     /// #
-    /// let channel_config = TxChannelConfig::default();
+    /// let channel_config = TxChannelConfig { resolution: Hertz(80_000_000), ..Default::default() };
     /// let driver = TxChannelDriver::new(led_pin, &channel_config).unwrap();
     /// ```
     ///

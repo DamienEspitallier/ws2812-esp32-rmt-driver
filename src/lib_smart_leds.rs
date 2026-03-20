@@ -91,11 +91,12 @@ where
     /// # use esp_idf_hal::peripherals::Peripherals;
     /// # use esp_idf_hal::rmt::config::TxChannelConfig;
     /// # use esp_idf_hal::rmt::TxChannelDriver;
+    /// # use esp_idf_hal::units::Hertz;
     /// #
     /// # let peripherals = Peripherals::take().unwrap();
     /// # let led_pin = peripherals.pins.gpio27;
     /// #
-    /// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
+    /// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig { resolution: Hertz(80_000_000), ..Default::default() }).unwrap();
     /// ```
     pub fn new_with_rmt_driver(tx: TxChannelDriver<'d>) -> Result<Self, Ws2812Esp32RmtDriverError> {
         Self::new_with_ws2812_driver(Ws2812Esp32RmtDriver::<'d>::new_with_rmt_driver(tx)?)
@@ -209,13 +210,14 @@ where
 /// # use esp_idf_hal::peripherals::Peripherals;
 /// # use esp_idf_hal::rmt::config::TxChannelConfig;
 /// # use esp_idf_hal::rmt::TxChannelDriver;
+/// # use esp_idf_hal::units::Hertz;
 /// # use smart_leds::{RGB8, SmartLedsWrite};
 /// # use ws2812_esp32_rmt_driver::Ws2812Esp32Rmt;
 /// #
 /// # let peripherals = Peripherals::take().unwrap();
 /// # let led_pin = peripherals.pins.gpio27;
 /// #
-/// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
+/// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig { resolution: Hertz(80_000_000), ..Default::default() }).unwrap();
 ///
 /// let mut ws2812 = Ws2812Esp32Rmt::new_with_rmt_driver(driver).unwrap();
 /// #

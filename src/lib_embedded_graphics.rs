@@ -120,11 +120,12 @@ where
     /// # use esp_idf_hal::peripherals::Peripherals;
     /// # use esp_idf_hal::rmt::config::TxChannelConfig;
     /// # use esp_idf_hal::rmt::TxChannelDriver;
+    /// # use esp_idf_hal::units::Hertz;
     /// #
     /// # let peripherals = Peripherals::take().unwrap();
     /// # let led_pin = peripherals.pins.gpio27;
     /// #
-    /// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig::default()).unwrap();
+    /// let driver = TxChannelDriver::new(led_pin, &TxChannelConfig { resolution: Hertz(80_000_000), ..Default::default() }).unwrap();
     /// ```
     pub fn new_with_rmt_driver(tx: TxChannelDriver<'d>) -> Result<Self, Ws2812Esp32RmtDriverError> {
         let driver = Ws2812Esp32RmtDriver::<'d>::new_with_rmt_driver(tx)?;
