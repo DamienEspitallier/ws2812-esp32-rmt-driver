@@ -11,6 +11,8 @@ use core::marker::PhantomData;
 use crate::mock::esp_idf_hal;
 #[cfg(target_vendor = "espressif")]
 use esp_idf_hal::rmt::{encoder::{BytesEncoder, BytesEncoderConfig}, PinState, Pulse, Symbol};
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+use alloc::vec::Vec;
 use esp_idf_hal::{
     gpio::OutputPin,
     rmt::{config::TxChannelConfig, TxChannelDriver},
@@ -333,7 +335,7 @@ impl<'d> Ws2812Esp32RmtDriver<'d> {
                 msb_first: true,
                 ..Default::default()
             })?;
-            let data: alloc::vec::Vec<u8> = pixel_sequence.collect();
+            let data: Vec<u8> = pixel_sequence.collect();
             self.tx.send_iter([encoder], core::iter::once(data.as_slice()), &TransmitConfig::default())?;
         }
         #[cfg(not(target_vendor = "espressif"))]
@@ -367,7 +369,7 @@ impl<'d> Ws2812Esp32RmtDriver<'d> {
                 msb_first: true,
                 ..Default::default()
             })?;
-            let data: alloc::vec::Vec<u8> = pixel_sequence.collect();
+            let data: Vec<u8> = pixel_sequence.collect();
             self.tx.send_iter([encoder], core::iter::once(data.as_slice()), &TransmitConfig::default())?;
         }
         #[cfg(not(target_vendor = "espressif"))]
